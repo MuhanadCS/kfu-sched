@@ -1,0 +1,1026 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KFU Course Scheduler</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #151820;
+    --surface2: #1c2030;
+    --border: #252a3a;
+    --accent: #4f8ef7;
+    --accent2: #7c5af7;
+    --green: #2ecc8a;
+    --red: #e85d5d;
+    --yellow: #f7c04f;
+    --text: #e8ecf5;
+    --text2: #8892a8;
+    --text3: #555e75;
+    --font: 'IBM Plex Sans Arabic', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    direction: rtl;
+  }
+
+  /* ─── Header ─── */
+  header {
+    padding: 28px 32px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(12px);
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.02em; }
+  .subtitle { font-size: 0.75rem; color: var(--text2); margin-top: 2px; font-family: var(--mono); }
+
+  .btn-reset {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 0.85rem;
+    transition: all 0.2s;
+  }
+  .btn-reset:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ─── Layout ─── */
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 24px; }
+
+  /* ─── Step indicator ─── */
+  .step-bar {
+    display: flex;
+    gap: 0;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .step {
+    flex: 1;
+    text-align: center;
+    padding: 12px;
+    font-size: 0.8rem;
+    color: var(--text3);
+    position: relative;
+    transition: color 0.3s;
+  }
+  .step.active { color: var(--accent); }
+  .step.done { color: var(--green); }
+  .step-num {
+    display: inline-flex;
+    align-items: center; justify-content: center;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 1px solid currentColor;
+    margin-bottom: 6px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s;
+  }
+  .step.active .step-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .step.done .step-num { background: var(--green); border-color: var(--green); color: #fff; }
+  .step-label { display: block; }
+
+  /* ─── STEP 1: Course input ─── */
+  #step1 { padding: 32px 0; }
+
+  .api-info {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-right: none;
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin-bottom: 28px;
+    font-size: 0.8rem;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+  .api-info span { color: var(--accent); }
+
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .course-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    transition: border-color 0.2s;
+  }
+  .course-card:hover { border-color: var(--accent); }
+
+  .course-card label { font-size: 0.8rem; color: var(--text2); font-weight: 500; }
+  .course-card input, .course-card select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.2s;
+    direction: rtl;
+  }
+  .course-card input:focus, .course-card select:focus { border-color: var(--accent); }
+  .course-card select option { background: var(--surface2); }
+
+  .remove-btn {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: transparent;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 18px;
+    line-height: 1;
+    transition: color 0.2s;
+    padding: 2px;
+  }
+  .remove-btn:hover { color: var(--red); }
+
+  .add-course-btn {
+    border: 1.5px dashed var(--border);
+    background: transparent;
+    color: var(--text2);
+    border-radius: 12px;
+    padding: 18px;
+    cursor: pointer;
+    font-family: var(--font);
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 80px;
+  }
+  .add-course-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .generate-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: var(--font);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    margin-top: 8px;
+  }
+  .generate-btn:hover { opacity: 0.9; }
+  .generate-btn:active { transform: scale(0.99); }
+  .generate-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ─── Loading ─── */
+  #loadingScreen {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 0;
+    gap: 20px;
+    color: var(--text2);
+  }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 3px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-text { font-family: var(--mono); font-size: 0.85rem; }
+
+  /* ─── STEP 2: Filters ─── */
+  #step2 { display: none; padding: 32px 0; }
+
+  .filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 20px;
+    margin-bottom: 28px;
+  }
+
+  .filter-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+  }
+  .filter-box h3 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 12px;
+  }
+  .filter-search {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 12px;
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 0.85rem;
+    outline: none;
+    margin-bottom: 10px;
+    direction: rtl;
+  }
+  .filter-search:focus { border-color: var(--accent); }
+
+  .filter-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .filter-list::-webkit-scrollbar { width: 4px; }
+  .filter-list::-webkit-scrollbar-track { background: transparent; }
+  .filter-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .filter-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .filter-item:hover { background: var(--surface2); }
+  .filter-item input[type=checkbox] { accent-color: var(--accent); width: 15px; height: 15px; }
+  .filter-item label { font-size: 0.85rem; color: var(--text); cursor: pointer; direction: rtl; }
+
+  .generate-btn2 {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--green), #1a9e68);
+    border: none;
+    border-radius: 12px;
+    color: #fff;
+    font-family: var(--font);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+  }
+  .generate-btn2:hover { opacity: 0.9; }
+
+  .clear-filters-btn {
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text2);
+    font-family: var(--font);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+  }
+  .clear-filters-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* ─── STEP 3: Results ─── */
+  #step3 { display: none; padding: 32px 0; }
+
+  .results-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    flex-wrap: gap;
+  }
+  .results-count {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+  .results-count span { color: var(--accent); font-weight: 600; }
+
+  .schedule-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+  .schedule-card:hover { border-color: var(--accent); }
+
+  .schedule-header {
+    padding: 18px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .schedule-title { font-size: 1rem; font-weight: 700; }
+  .schedule-crns { font-family: var(--mono); font-size: 0.75rem; color: var(--text3); }
+
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    direction: ltr; /* table columns left-to-right: Time, Sun, Mon... */
+  }
+  thead th {
+    background: var(--surface2);
+    padding: 12px 10px;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text2);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border);
+  }
+  thead th:first-child { text-align: right; padding-right: 20px; min-width: 140px; }
+  tbody tr { border-bottom: 1px solid var(--border); }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(79, 142, 247, 0.04); }
+  tbody td { padding: 8px 6px; vertical-align: top; }
+  tbody td:first-child { padding: 14px 20px; font-family: var(--mono); font-size: 0.75rem; color: var(--text2); white-space: nowrap; }
+
+  .cell-item {
+    background: rgba(79, 142, 247, 0.08);
+    border: 1px solid rgba(79, 142, 247, 0.2);
+    border-right: 3px solid var(--accent);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 4px;
+    direction: rtl;
+  }
+  .cell-item.unavail {
+    background: rgba(232, 93, 93, 0.08);
+    border-color: rgba(232, 93, 93, 0.2);
+    border-right-color: var(--red);
+  }
+  .cell-item .course-code { font-weight: 700; font-size: 0.75rem; color: var(--accent); font-family: var(--mono); }
+  .cell-item.unavail .course-code { color: var(--red); }
+  .cell-item .course-name { font-size: 0.8rem; color: var(--text); margin: 2px 0; }
+  .cell-item .course-type { font-size: 0.72rem; color: var(--text3); font-style: italic; }
+  .cell-item .course-meta { font-size: 0.72rem; color: var(--text2); margin-top: 4px; }
+  .cell-item .course-meta strong { color: var(--text3); }
+  .status-badge {
+    display: inline-block;
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 20px;
+    margin-top: 4px;
+    font-weight: 600;
+  }
+  .status-badge.avail { background: rgba(46, 204, 138, 0.15); color: var(--green); }
+  .status-badge.unavail { background: rgba(232, 93, 93, 0.15); color: var(--red); }
+
+  /* ─── Error / Empty states ─── */
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text3);
+    font-size: 0.9rem;
+  }
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 12px; }
+
+  .error-box {
+    background: rgba(232, 93, 93, 0.08);
+    border: 1px solid rgba(232, 93, 93, 0.25);
+    border-radius: 10px;
+    padding: 16px 20px;
+    color: var(--red);
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    display: none;
+  }
+
+  footer {
+    text-align: center;
+    padding: 32px;
+    color: var(--text3);
+    font-size: 0.75rem;
+    border-top: 1px solid var(--border);
+    margin-top: 40px;
+    font-family: var(--mono);
+  }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    header { padding: 16px; }
+    .container { padding: 0 12px; }
+    .step-label { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">📅</div>
+    <div>
+      <h1>مُجدوِل الجامعة</h1>
+      <div class="subtitle">KFU Course Scheduler</div>
+    </div>
+  </div>
+  <button class="btn-reset" onclick="resetAll()">↺ بداية جديدة</button>
+</header>
+
+<div class="container">
+
+  <!-- Step bar -->
+  <div class="step-bar">
+    <div class="step active" id="s1">
+      <div class="step-num">1</div>
+      <span class="step-label">اختر المواد</span>
+    </div>
+    <div class="step" id="s2">
+      <div class="step-num">2</div>
+      <span class="step-label">الفلاتر</span>
+    </div>
+    <div class="step" id="s3">
+      <div class="step-num">3</div>
+      <span class="step-label">الجداول</span>
+    </div>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="step1">
+    <div class="api-info">
+      المصدر: <span>ssb-ar.kfu.edu.sa</span> — col_code=<span>01</span> | trm=<span>144810</span>
+    </div>
+    <div id="errorBox" class="error-box"></div>
+    <div class="courses-grid" id="coursesGrid"></div>
+    <button class="add-course-btn" onclick="addCourseRow()">＋ أضف مادة</button>
+    <button class="generate-btn" id="fetchBtn" onclick="fetchAndGenerate()">جلب المواد وإنشاء الجداول ←</button>
+  </div>
+
+  <!-- Loading -->
+  <div id="loadingScreen">
+    <div class="spinner"></div>
+    <div class="loading-text">جاري جلب البيانات من الخادم…</div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step2">
+    <button class="clear-filters-btn" onclick="clearFilters()">✕ مسح الفلاتر</button>
+    <div class="filters-grid" id="filtersGrid"></div>
+    <button class="generate-btn2" onclick="applyFiltersAndShow()">عرض الجداول ←</button>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step3">
+    <div class="results-header">
+      <div class="results-count" id="resultsCount"></div>
+      <button class="btn-reset" onclick="goToStep(2)">← تعديل الفلاتر</button>
+    </div>
+    <div id="schedulesContainer"></div>
+  </div>
+
+</div>
+
+<footer>
+  Built for educational purposes · Always verify with official university sources
+</footer>
+
+<script>
+// ─── State ───────────────────────────────────────────────────
+const API_BASE = 'https://ssb-ar.kfu.edu.sa/PROD_ar/ws';
+const API_PARAMS = 'p_trm_code=144810&p_col_code=01&p_sex_code=11';
+const DAYS = ['الأحد','الاثنين','الثلاثاء','الأربعاء','الخميس'];
+const DAY_KEYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday'];
+
+let allCourseData = {}; // { courseCode: [sections] }
+let selectedCourseRows = []; // [{code, selectedSections:[]}]
+let courseRowId = 0;
+let generatedSchedules = [];
+
+// ─── Step management ─────────────────────────────────────────
+function goToStep(n) {
+  document.getElementById('step1').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('step2').style.display = n===2 ? 'block' : 'none';
+  document.getElementById('step3').style.display = n===3 ? 'block' : 'none';
+  document.getElementById('loadingScreen').style.display = 'none';
+  ['s1','s2','s3'].forEach((id,i) => {
+    const el = document.getElementById(id);
+    el.className = 'step' + (i+1 < n ? ' done' : i+1 === n ? ' active' : '');
+  });
+}
+
+function showLoading() {
+  document.getElementById('step1').style.display = 'none';
+  document.getElementById('step2').style.display = 'none';
+  document.getElementById('step3').style.display = 'none';
+  document.getElementById('loadingScreen').style.display = 'flex';
+}
+
+function resetAll() {
+  allCourseData = {};
+  selectedCourseRows = [];
+  courseRowId = 0;
+  generatedSchedules = [];
+  document.getElementById('coursesGrid').innerHTML = '';
+  hideError();
+  goToStep(1);
+  addCourseRow();
+}
+
+// ─── Course row UI ────────────────────────────────────────────
+function addCourseRow() {
+  const id = ++courseRowId;
+  const grid = document.getElementById('coursesGrid');
+  const div = document.createElement('div');
+  div.className = 'course-card';
+  div.id = 'courseRow_' + id;
+  div.innerHTML = `
+    <button class="remove-btn" onclick="removeCourseRow(${id})" title="حذف">×</button>
+    <label>رمز المادة (مثل: 0921-411)</label>
+    <input type="text" id="code_${id}" placeholder="0921-411" dir="ltr" />
+  `;
+  grid.appendChild(div);
+}
+
+function removeCourseRow(id) {
+  const el = document.getElementById('courseRow_' + id);
+  if (el) el.remove();
+}
+
+function getCourseInputs() {
+  const inputs = document.querySelectorAll('[id^="code_"]');
+  return [...inputs].map(i => i.value.trim()).filter(Boolean);
+}
+
+// ─── Fetch & parse ───────────────────────────────────────────
+function showError(msg) {
+  const b = document.getElementById('errorBox');
+  b.textContent = msg;
+  b.style.display = 'block';
+}
+function hideError() {
+  document.getElementById('errorBox').style.display = 'none';
+}
+
+async function fetchCourseData() {
+  const url = `${API_BASE}?${API_PARAMS}`;
+  // Try direct fetch; if CORS fails we show a helpful message
+  const resp = await fetch(url);
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  const text = await resp.text();
+  return parseSections(text);
+}
+
+function parseSections(text) {
+  // The KFU API returns either JSON or HTML table; try JSON first
+  let data;
+  try {
+    data = JSON.parse(text);
+  } catch(e) {
+    // Try to parse HTML table format
+    return parseHTMLTable(text);
+  }
+  // If JSON array of section objects
+  if (Array.isArray(data)) return indexSections(data);
+  // If object with a sections key
+  if (data.sections) return indexSections(data.sections);
+  if (data.data) return indexSections(data.data);
+  // fallback — treat keys as course codes
+  return data;
+}
+
+function indexSections(arr) {
+  const idx = {};
+  arr.forEach(s => {
+    const code = s.subj_code
+      ? `${s.subj_code}-${s.crse_numb || s.course_numb}`
+      : s.course_code || s.courseCode || s.code || 'UNK';
+    if (!idx[code]) idx[code] = [];
+    idx[code].push(normalizeSection(s));
+  });
+  return idx;
+}
+
+function normalizeSection(s) {
+  // Map various API field naming conventions to a standard shape
+  return {
+    crn: s.crn || s.CRN || s.crn_key || '',
+    courseCode: s.subj_code ? `${s.subj_code}-${s.crse_numb||s.course_numb}` : (s.course_code||s.courseCode||''),
+    courseName: s.crse_title || s.course_title || s.courseName || s.title || '',
+    type: s.schd_desc || s.section_type || s.type || '',
+    instructor: s.instr_name || s.instructor || s.faculty || 'غير معروف',
+    status: s.enrl_stat_desc || s.status || '',
+    available: (s.enrl_stat || s.status || '').toString().toLowerCase().includes('open')
+            || (s.enrl_stat_desc || s.status || '').includes('متاح'),
+    meetings: parseMeetings(s),
+  };
+}
+
+function parseMeetings(s) {
+  // Different possible shapes of schedule data
+  if (s.meetings && Array.isArray(s.meetings)) return s.meetings.map(m => ({
+    days: m.days || m.day_code || '',
+    startTime: m.begin_time || m.start_time || '',
+    endTime: m.end_time || '',
+  }));
+  if (s.begin_time) return [{
+    days: s.days || s.day_code || '',
+    startTime: s.begin_time,
+    endTime: s.end_time || '',
+  }];
+  return [];
+}
+
+function parseHTMLTable(html) {
+  // Minimal HTML table parser for KFU-style responses
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const rows = doc.querySelectorAll('tr');
+  const sections = [];
+  rows.forEach(row => {
+    const cells = [...row.querySelectorAll('td')].map(c => c.textContent.trim());
+    if (cells.length < 5) return;
+    sections.push({
+      crn: cells[0], courseCode: cells[1], courseName: cells[2],
+      type: cells[3], instructor: cells[4] || 'غير معروف',
+      status: cells[5] || '', available: (cells[5]||'').includes('متاح'),
+      meetings: [],
+    });
+  });
+  return indexSections(sections);
+}
+
+// ─── Main flow ───────────────────────────────────────────────
+async function fetchAndGenerate() {
+  const codes = getCourseInputs();
+  if (codes.length === 0) {
+    showError('أدخل رمز مادة واحدة على الأقل');
+    return;
+  }
+  hideError();
+  showLoading();
+
+  try {
+    const allData = await fetchCourseData();
+    allCourseData = allData;
+
+    // Filter to only requested courses
+    const missing = [];
+    codes.forEach(c => {
+      if (!allCourseData[c]) missing.push(c);
+    });
+
+    if (missing.length > 0 && Object.keys(allCourseData).length === 0) {
+      goToStep(1);
+      showError('تعذّر جلب البيانات. قد يكون الخادم يمنع الطلبات من المتصفح (CORS). جرّب فتح الصفحة محلياً أو استخدم امتداد CORS في المتصفح.');
+      return;
+    }
+
+    buildFiltersUI(codes);
+    goToStep(2);
+  } catch(err) {
+    goToStep(1);
+    showError(`خطأ في الجلب: ${err.message}. تأكد من اتصال الإنترنت، أو قد يكون الخادم يحظر الطلبات (CORS).`);
+  }
+}
+
+// ─── Filters UI ──────────────────────────────────────────────
+function buildFiltersUI(codes) {
+  const grid = document.getElementById('filtersGrid');
+  grid.innerHTML = '';
+
+  // Days off
+  const daysBox = document.createElement('div');
+  daysBox.className = 'filter-box';
+  daysBox.innerHTML = `<h3>أيام الراحة</h3><div class="filter-list" id="daysFilter">
+    ${DAY_KEYS.map((k,i) => `
+      <label class="filter-item">
+        <input type="checkbox" name="day" value="${k}">
+        <span>${DAYS[i]}</span>
+      </label>`).join('')}
+  </div>`;
+  grid.appendChild(daysBox);
+
+  // Collect all instructors & CRNs from selected courses
+  const instructors = new Set();
+  const crns = new Set();
+  codes.forEach(code => {
+    (allCourseData[code] || []).forEach(s => {
+      if (s.instructor) instructors.add(s.instructor);
+      if (s.crn) crns.add(s.crn);
+    });
+  });
+
+  // Instructors
+  const instrBox = document.createElement('div');
+  instrBox.className = 'filter-box';
+  instrBox.innerHTML = `<h3>الأساتذة (يجب تضمين الكل)</h3>
+    <input class="filter-search" placeholder="بحث..." oninput="filterList('instrFilter', this.value)">
+    <div class="filter-list" id="instrFilter">
+      ${[...instructors].map(i => `
+        <label class="filter-item">
+          <input type="checkbox" name="instr" value="${escHtml(i)}">
+          <span>${escHtml(i)}</span>
+        </label>`).join('')}
+    </div>`;
+  grid.appendChild(instrBox);
+
+  // CRNs
+  const crnBox = document.createElement('div');
+  crnBox.className = 'filter-box';
+  crnBox.innerHTML = `<h3>الشعب (CRN)</h3>
+    <input class="filter-search" placeholder="بحث..." oninput="filterList('crnFilter', this.value)">
+    <div class="filter-list" id="crnFilter">
+      ${[...crns].sort().map(c => `
+        <label class="filter-item">
+          <input type="checkbox" name="crn" value="${escHtml(c)}">
+          <span>${escHtml(c)}</span>
+        </label>`).join('')}
+    </div>`;
+  grid.appendChild(crnBox);
+
+  // Store codes for schedule generation
+  window._selectedCodes = codes;
+}
+
+function filterList(listId, query) {
+  const list = document.getElementById(listId);
+  list.querySelectorAll('.filter-item').forEach(item => {
+    const text = item.querySelector('span').textContent.toLowerCase();
+    item.style.display = text.includes(query.toLowerCase()) ? '' : 'none';
+  });
+}
+
+function clearFilters() {
+  document.querySelectorAll('#filtersGrid input[type=checkbox]').forEach(cb => cb.checked = false);
+}
+
+function getChecked(name) {
+  return [...document.querySelectorAll(`input[name="${name}"]:checked`)].map(cb => cb.value);
+}
+
+// ─── Schedule generation ─────────────────────────────────────
+function applyFiltersAndShow() {
+  const offDays = getChecked('day');
+  const mustInstrs = getChecked('instr');
+  const mustCrns = getChecked('crn');
+  const codes = window._selectedCodes || [];
+
+  // For each course, get its section groups (lecture + lab pairs)
+  // Group sections by course type: we want one theory + one lab per course
+  const groups = codes.map(code => {
+    const sections = allCourseData[code] || [];
+    return sections.filter(s => {
+      if (mustCrns.length && !mustCrns.includes(s.crn)) return false;
+      if (mustInstrs.length && !mustInstrs.some(mi => s.instructor === mi)) {
+        // only block if we explicitly must include this instructor but section has diff one
+        // Actually filter: if mustInstrs set, section instructor must be in set OR be unknown
+        if (!mustInstrs.includes(s.instructor)) return false;
+      }
+      return true;
+    });
+  });
+
+  // Separate theory and lab sections
+  // Theory = نظري, Lab = عملي; we need one of each per course
+  const courseOptions = codes.map((code, i) => {
+    const sections = groups[i];
+    const theory = sections.filter(s => (s.type||'').includes('نظري') || (s.type||'').toLowerCase().includes('lec'));
+    const lab    = sections.filter(s => (s.type||'').includes('عملي') || (s.type||'').toLowerCase().includes('lab'));
+    const other  = sections.filter(s => !theory.includes(s) && !lab.includes(s));
+    // If no explicit theory/lab split, treat all as "theory"
+    if (theory.length === 0 && lab.length === 0) return [sections.map(s => [s])];
+    if (lab.length === 0) return [theory.map(s => [s])];
+    if (theory.length === 0) return [lab.map(s => [s])];
+    // Pair each theory with each lab of the same section group number
+    const pairs = [];
+    theory.forEach(t => {
+      lab.forEach(l => pairs.push([t, l]));
+    });
+    return [pairs.length ? pairs : theory.map(s => [s])];
+  });
+
+  // Flatten to get all section combos per course
+  const perCourse = courseOptions.map(opt => opt[0]);
+
+  // Generate all schedule combinations
+  let combos = [[]];
+  perCourse.forEach(options => {
+    const newCombos = [];
+    options.forEach(opt => {
+      combos.forEach(combo => newCombos.push([...combo, ...opt]));
+    });
+    combos = newCombos;
+  });
+
+  // Filter by day conflicts and off-days
+  const valid = combos.filter(combo => {
+    // Check no time conflict
+    const slots = [];
+    for (const section of combo) {
+      for (const m of section.meetings) {
+        const days = parseDayCodes(m.days);
+        // Check off-days
+        if (offDays.some(od => days.includes(od))) return false;
+        const start = timeToMin(m.startTime);
+        const end = timeToMin(m.endTime);
+        for (const existing of slots) {
+          if (existing.days.some(d => days.includes(d))) {
+            if (start < existing.end && end > existing.start) return false; // overlap
+          }
+        }
+        slots.push({ days, start, end });
+      }
+    }
+    return true;
+  });
+
+  generatedSchedules = valid;
+  renderSchedules(valid);
+  goToStep(3);
+}
+
+function parseDayCodes(dayStr) {
+  if (!dayStr) return [];
+  // Handle Arabic day names
+  const map = {
+    'أحد': 'Sunday', 'Sunday': 'Sunday', 'U': 'Sunday',
+    'اثنين': 'Monday', 'Monday': 'Monday', 'M': 'Monday',
+    'ثلاثاء': 'Tuesday', 'Tuesday': 'Tuesday', 'T': 'Tuesday',
+    'أربعاء': 'Wednesday', 'Wednesday': 'Wednesday', 'W': 'Wednesday',
+    'خميس': 'Thursday', 'Thursday': 'Thursday', 'R': 'Thursday',
+  };
+  const result = [];
+  Object.keys(map).forEach(k => {
+    if (dayStr.includes(k)) result.push(map[k]);
+  });
+  return [...new Set(result)];
+}
+
+function timeToMin(t) {
+  if (!t) return 0;
+  // HH:MM or HHMM
+  t = t.toString().replace(':', '');
+  if (t.length === 3) t = '0' + t;
+  return parseInt(t.slice(0,2)) * 60 + parseInt(t.slice(2,4));
+}
+
+function minToTime(m) {
+  const h = Math.floor(m/60), min = m%60;
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const hh = h > 12 ? h-12 : h === 0 ? 12 : h;
+  return `${hh}:${min.toString().padStart(2,'0')} ${ampm}`;
+}
+
+// ─── Render schedules ─────────────────────────────────────────
+function renderSchedules(schedules) {
+  const container = document.getElementById('schedulesContainer');
+  container.innerHTML = '';
+
+  document.getElementById('resultsCount').innerHTML =
+    `وُجد <span>${schedules.length}</span> جدول ممكن`;
+
+  if (schedules.length === 0) {
+    container.innerHTML = `<div class="empty-state">
+      <div class="icon">😔</div>
+      <div>لا توجد جداول ممكنة بالفلاتر المحددة. جرّب تخفيف الفلاتر.</div>
+    </div>`;
+    return;
+  }
+
+  schedules.forEach((combo, idx) => {
+    const crns = combo.map(s => s.crn).join(', ');
+    const card = document.createElement('div');
+    card.className = 'schedule-card';
+
+    // Collect unique time slots
+    const timeSlots = new Set();
+    const dayMap = {}; // {timeKey: {day: [sections]}}
+
+    combo.forEach(section => {
+      section.meetings.forEach(m => {
+        const days = parseDayCodes(m.days);
+        const start = timeToMin(m.startTime);
+        const end = timeToMin(m.endTime);
+        const key = `${m.startTime}-${m.endTime}`;
+        timeSlots.add(key + '|' + start);
+        days.forEach(d => {
+          if (!dayMap[key]) dayMap[key] = {};
+          if (!dayMap[key][d]) dayMap[key][d] = [];
+          dayMap[key][d].push(section);
+        });
+      });
+    });
+
+    const sortedSlots = [...timeSlots].sort((a,b) => parseInt(a.split('|')[1]) - parseInt(b.split('|')[1]));
+
+    const rows = sortedSlots.map(slotRaw => {
+      const slot = slotRaw.split('|')[0];
+      const [st, et] = slot.split('-');
+      const stMin = timeToMin(st), etMin = timeToMin(et);
+      const timeLabel = `${minToTime(stMin)} - ${minToTime(etMin)}`;
+
+      const cells = DAY_KEYS.map(day => {
+        const sections = (dayMap[slot] || {})[day] || [];
+        if (!sections.length) return '<td></td>';
+        const html = sections.map(s => {
+          const avail = s.available;
+          return `<div class="cell-item${avail ? '' : ' unavail'}">
+            <div class="course-code">${escHtml(s.courseCode)}</div>
+            <div class="course-name">${escHtml(s.courseName)}</div>
+            <div class="course-type">${escHtml(s.type)}</div>
+            <div class="course-meta"><strong>CRN:</strong> ${escHtml(s.crn)}</div>
+            <div class="course-meta"><strong>د.:</strong> ${escHtml(s.instructor)}</div>
+            <div><span class="status-badge ${avail ? 'avail' : 'unavail'}">${avail ? 'متاحه' : 'غير متاحه'}</span></div>
+          </div>`;
+        }).join('');
+        return `<td>${html}</td>`;
+      }).join('');
+
+      return `<tr>
+        <td>${timeLabel}</td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    card.innerHTML = `
+      <div class="schedule-header">
+        <div class="schedule-title">الجدول #${idx + 1}</div>
+        <div class="schedule-crns">CRNs: ${escHtml(crns)}</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>الوقت</th>
+              ${DAYS.map(d => `<th>${d}</th>`).join('')}
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── Init ─────────────────────────────────────────────────────
+resetAll();
+</script>
+</body>
+</html>
